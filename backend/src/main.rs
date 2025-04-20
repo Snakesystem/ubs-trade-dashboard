@@ -1,7 +1,7 @@
 use actix_cors::Cors;
 use actix_web::{ get, http::{self}, middleware::{self}, web::{self, route}, App, HttpServer};
 use contexts::{connection::{create_pool, DbPool}, logger::write_log};
-use handlers::generic_handler::generic_scope;
+use handlers::{chart_handler::chart_scope, data_handler::data_scope, generic_handler::generic_scope};
 use services::generic_service::{self};
 
 mod contexts {
@@ -12,10 +12,14 @@ mod contexts {
 
 mod handlers {
     pub mod generic_handler;
+    pub mod data_handler;
+    pub mod chart_handler;
 }
 
 mod services {
     pub mod generic_service;
+    pub mod data_service;
+    pub mod chart_service;
 }
 
 #[get("/")]
@@ -27,7 +31,7 @@ async fn health_check() -> String {
 async fn main() -> std::io::Result<()> {
     env_logger::init(); // Aktifkan logging
     dotenvy::dotenv().ok();
-    let db_pool: DbPool = create_pool("S21Plus_RO").await.unwrap();
+    let db_pool: DbPool = create_pool("db12877").await.unwrap();
 
     write_log("INFO", "Test log message: Logging is working");
     println!("🚀 Application started");
@@ -45,6 +49,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(web::scope("/v1")
             .service(generic_scope())
+            .service(data_scope())
+            .service(chart_scope())
         )
         .app_data(web::Data::new(db_pool.clone()))
         .app_data(web::JsonConfig::default().error_handler(generic_service::GenericService::json_error_handler))

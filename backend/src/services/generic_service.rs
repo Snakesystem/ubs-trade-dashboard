@@ -10,9 +10,7 @@ use crate::contexts::model::{ActionResult, Company, Order};
 pub struct GenericService;
 
 impl GenericService {
-    pub async fn get_company(
-        connection: web::Data<Pool<ConnectionManager>>,
-    ) -> ActionResult<Company, String> {
+    pub async fn get_company(connection: web::Data<Pool<ConnectionManager>>) -> ActionResult<Company, String> {
         let mut result = ActionResult::default();
 
         match connection.clone().get().await {
@@ -53,11 +51,7 @@ impl GenericService {
         }
     }
 
-    pub async fn get_orders(
-        pool: web::Data<Pool<ConnectionManager>>,
-        last_id: Option<i64>,
-        limit: Option<i32>,
-    ) -> ActionResult<Vec<Order>, String> {
+    pub async fn get_orders(pool: web::Data<Pool<ConnectionManager>>, last_id: Option<i64>, limit: Option<i32>) -> ActionResult<Vec<Order>, String> {
         let mut result = ActionResult::<Vec<Order>, String>::default();
 
         let limit = limit.unwrap_or(50).min(10000);
@@ -66,10 +60,10 @@ impl GenericService {
         match pool.clone().get().await {
             Ok(mut conn) => {
                 let query = r#"
-                    SELECT TOP (@P1) OrderNID, BuySell, CAST(OrderPrice AS float) as OrderPrice, OrderDate
-                    FROM [Order]
-                    WHERE OrderNID > @P2
-                    ORDER BY OrderNID ASC
+                    SELECT TOP (@P1) CIFLookupNID, CIFLookupID, CAST(EndIncome AS float) as EndIncome, LastUpdate
+                    FROM [CIFLookup]
+                    WHERE CIFLookupNID > @P2
+                    ORDER BY CIFLookupNID ASC
                 "#;
 
                 match conn.query(query, &[&limit, &last_id]).await {
@@ -80,14 +74,14 @@ impl GenericService {
                             match row_result {
                                 Ok(QueryItem::Row(row)) => {
                                     data.push(Order {
-                                        id: row.get::<i32, _>("OrderNID").unwrap_or_default(),
+                                        id: row.get::<i32, _>("CIFLookupNID").unwrap_or_default(),
                                         customer_name: row
-                                            .get::<&str, _>("BuySell")
+                                            .get::<&str, _>("CIFLookupID")
                                             .unwrap_or_default()
                                             .to_string(),
-                                        total_price: row.get::<f64, _>("OrderPrice").unwrap_or(0.0),
+                                        total_price: row.get::<f64, _>("EndIncome").unwrap_or(0.0),
                                         created_at: row
-                                            .get::<chrono::NaiveDateTime, _>("OrderDate")
+                                            .get::<chrono::NaiveDateTime, _>("LastUpdate")
                                             .unwrap(),
                                     });
                                 }

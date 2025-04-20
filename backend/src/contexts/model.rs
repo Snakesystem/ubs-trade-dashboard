@@ -95,7 +95,21 @@ pub struct QueryClass {
 
 #[derive(Debug, Serialize)]
 pub struct ResultList {
-    pub total: i64,
-    pub total_with_filter: i64,
+    pub totalNotFiltered: i32,
+    pub total: i32,
     pub rows: Vec<serde_json::Value>, // Pastikan ini bisa dikonversi ke JSON
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BarChartRequest {
+    pub chart_name: String,
+    pub menu_id: String,
+    pub list_column: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BarChartParams {
+    pub tablename: String,
+    pub column: String,
+    pub filter: Option<String>,
 }

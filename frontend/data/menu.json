@@ -1,0 +1,7 @@
+[
+  { "MenuNID": 1, "MenuID": "home", "MenuName": "Home", "MenuIndex": 0, "MenuIcon": "house" },
+  { "MenuNID": 2, "MenuID": "profile", "MenuName": "Profile", "MenuIndex": 1, "MenuIcon": "person" },
+  { "MenuNID": 3, "MenuID": "dashboard", "MenuName": "Dashboard", "MenuIndex": 2, "MenuIcon": "grid" },
+  { "MenuNID": 4, "MenuID": "settings", "MenuName": "Settings", "MenuIndex": 3, "MenuIcon": "gear" },
+  { "MenuNID": 5, "MenuID": "help", "MenuName": "Help", "MenuIndex": 4, "MenuIcon": "info-circle" }
+]
