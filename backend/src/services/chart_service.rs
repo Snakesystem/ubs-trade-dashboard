@@ -77,7 +77,7 @@ impl ChartService {
                 }
     
                 let query = format!(
-                    "SELECT {} AS Value, COUNT(*) as count FROM {} {} GROUP BY {}",
+                    "SELECT {} AS Value, COUNT(*) as Count FROM {} {} GROUP BY {}",
                     &params.column, &params.tablename, &q_and_where, &params.column
                 );
                 

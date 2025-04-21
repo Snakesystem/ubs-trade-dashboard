@@ -1,5 +1,4 @@
 use std::collections::HashMap; 
-// buat i64::try_from(i128)
 use serde_json::{json, Value as JsonValue};
 use actix_web::web;
 use bb8::Pool;
@@ -8,12 +7,44 @@ use chrono::{NaiveDate, NaiveDateTime};
 use tiberius::{numeric::Numeric, ColumnType, Row};
 use std::fmt::Write;
 
-use crate::contexts::{logger::write_log, model::{QueryClass, ResultList, TableDataParams}};
+use crate::contexts::{logger::write_log, model::{ActionResult, QueryClass, ResultList, TableDataParams}};
 pub struct DataService;
 
 impl DataService {
-    pub async fn get_header() -> String {
-        "Data".to_string()
+    pub async fn get_header(connection: web::Data<Pool<ConnectionManager>>, tablename: String) -> ActionResult<Vec<serde_json::Value>, String> {
+        let mut result: ActionResult<Vec<serde_json::Value>, String> = ActionResult::default();
+
+        match connection.clone().get().await { 
+            Ok(mut conn) => {
+                match conn.query(r#"exec dbo.Web_CreateTableObject @ViewName = @P1"#, &[&tablename]).await {
+                    Ok(rows) => {      
+    
+                        let data: Vec<Vec<Row>> = rows.into_results().await.unwrap();
+
+                        let row_data = data.into_iter()
+                        .flat_map(|r| r.into_iter())
+                        .map(|row| DataService::row_to_json(&row));
+                        
+                        result.data = Some(row_data.collect());
+                    
+                        result.result = true;
+                        result.message = "Data retrieved successfully".to_string();
+                        return result;
+                    }
+                    Err(e) => {
+                        result.message = "Internal Server Error".to_string();
+                        result.error = Some(e.to_string());
+                        return result;
+                    }
+                }
+            }
+            Err(e) => {
+                result.message = "Internal Server Error".to_string();
+                result.error = Some(e.to_string());
+                return result;
+            }
+        }
+
     }
 
     pub async fn get_table_data(allparams: TableDataParams, connection: web::Data<Pool<ConnectionManager>>) -> Result<ResultList, Box<dyn std::error::Error>> {

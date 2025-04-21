@@ -3,7 +3,7 @@ use bb8::Pool;
 use bb8_tiberius::ConnectionManager;
 use serde_json::json;
 
-use crate::{contexts::model::{ActionResult, ResultList, TableDataParams}, services::data_service::DataService};
+use crate::{contexts::model::{ActionResult, HeaderParams, ResultList, TableDataParams}, services::data_service::DataService};
 
 pub fn data_scope() -> Scope {
     web::scope("/data")
@@ -12,11 +12,21 @@ pub fn data_scope() -> Scope {
 }
 
 #[get("/header")]
-pub async fn get_header(pool: web::Data<Pool<ConnectionManager>>) -> impl Responder {
+pub async fn get_header(pool: web::Data<Pool<ConnectionManager>>, params: web::Query<HeaderParams>) -> impl Responder {
 
-   let result = DataService::get_header().await;
+    let result: ActionResult<Vec<serde_json::Value>, String> = DataService::get_header(pool, params.into_inner().tablename).await;
 
-   HttpResponse::Ok().json(result)
+    match result {
+        response if response.error.is_some() => {
+            HttpResponse::InternalServerError().json(response)
+        }, 
+        response if response.result => {
+            HttpResponse::Ok().json(response)
+        }, 
+        response => {
+            HttpResponse::BadRequest().json(response)
+        }
+    }
 }
 
 #[get("/get-table")]

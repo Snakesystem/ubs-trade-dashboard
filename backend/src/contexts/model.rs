@@ -113,3 +113,8 @@ pub struct BarChartParams {
     pub column: String,
     pub filter: Option<String>,
 }
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct HeaderParams {
+    pub tablename: String,
+}

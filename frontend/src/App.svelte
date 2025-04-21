@@ -35,12 +35,18 @@
     push('/' + path);
   }
 
+  $effect(() => {
+    if ($location === '/') {
+      navigateTo('home');
+    }
+  })
+
 </script>
 <main>
   <Header/>
   <nav class="bottom-nav">
     {#each menu as item}
-      <button class:active={$location === '/' + item.MenuID} on:click={() => navigateTo(item.MenuID)}>
+      <button class:active={$location === '/' + item.MenuID} onclick={() => navigateTo(item.MenuID)}>
         <i class="bi bi-{item.MenuIcon} me-2"></i>{item.MenuName}
       </button>
     {/each}
