@@ -13,39 +13,55 @@ pub struct DataService;
 impl DataService {
     pub async fn get_header(connection: web::Data<Pool<ConnectionManager>>, tablename: String) -> ActionResult<Vec<serde_json::Value>, String> {
         let mut result: ActionResult<Vec<serde_json::Value>, String> = ActionResult::default();
-
-        match connection.clone().get().await { 
-            Ok(mut conn) => {
-                match conn.query(r#"exec dbo.Web_CreateTableObject @ViewName = @P1"#, &[&tablename]).await {
-                    Ok(rows) => {      
     
-                        let data: Vec<Vec<Row>> = rows.into_results().await.unwrap();
-
-                        let row_data = data.into_iter()
-                        .flat_map(|r| r.into_iter())
-                        .map(|row| DataService::row_to_json(&row));
-                        
-                        result.data = Some(row_data.collect());
-                    
-                        result.result = true;
-                        result.message = "Data retrieved successfully".to_string();
+        match connection.clone().get().await {
+            Ok(mut conn) => {
+                let sql = r#"
+                    DECLARE @Result NVARCHAR(MAX);
+                    EXEC dbo.Web_CreateTableObject @ViewName = @P1, @Result = @Result OUTPUT;
+                    SELECT @Result AS Result;
+                "#;
+    
+                match conn.query(sql, &[&tablename]).await {
+                    Ok(rows) => {
+                        let all_results = rows.into_results().await.unwrap();
+    
+                        // Ambil isi @Result dari SELECT terakhir
+                        let output_result = all_results.last()
+                            .and_then(|set| set.first())
+                            .and_then(|row| row.get::<&str, _>("Result"))
+                            .unwrap_or("");
+    
+                        // Parse isi @Result ke Vec<serde_json::Value>
+                        match serde_json::from_str::<Vec<serde_json::Value>>(output_result) {
+                            Ok(parsed_json) => {
+                                result.data = Some(parsed_json);
+                                result.result = true;
+                                result.message = "Data retrieved successfully".to_string();
+                            }
+                            Err(e) => {
+                                result.message = "Failed to parse JSON".to_string();
+                                result.error = Some(e.to_string());
+                            }
+                        }
+    
                         return result;
                     }
                     Err(e) => {
-                        result.message = "Internal Server Error".to_string();
+                        result.message = "Query failed".to_string();
                         result.error = Some(e.to_string());
                         return result;
                     }
                 }
             }
             Err(e) => {
-                result.message = "Internal Server Error".to_string();
+                result.message = "Connection failed".to_string();
                 result.error = Some(e.to_string());
                 return result;
             }
         }
-
     }
+    
 
     pub async fn get_table_data(allparams: TableDataParams, connection: web::Data<Pool<ConnectionManager>>) -> Result<ResultList, Box<dyn std::error::Error>> {
         let mut result = ResultList {

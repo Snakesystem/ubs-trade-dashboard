@@ -1,33 +1,46 @@
 <script>
   import { onMount } from "svelte";
-  
-  let columns = [
-    { field: "AppComputerName", title: "AppComputerName" },
-    { field: "AppIPAddress", title: "AppIPAddress" },
-    { field: "CIFLookupDescription", title: "CIFLookupDescription" },
-    { field: "CIFLookupID", title: "CIFLookupID" },
-    { field: "CIFLookupInteger", title: "CIFLookupInteger" },
-    { field: "CIFLookupNID", title: "CIFLookupNID" },
-    { field: "CIFLookupString", title: "CIFLookupString" },
-    { field: "ChangeNID", title: "ChangeNID" },
-    { field: "ColumnName", title: "ColumnName" },
-    { field: "Description", title: "Description" },
-    { field: "EndIncome", title: "EndIncome" },
-    { field: "LastUpdate", title: "LastUpdate" },
-    { field: "MaxNetBuyPercent", title: "MaxNetBuyPercent" },
-    { field: "Risk", title: "Risk" },
-    { field: "SBROccupationCode", title: "SBROccupationCode" },
-    { field: "StartIncome", title: "StartIncome" },
-    { field: "SysTerminalID", title: "SysTerminalID" },
-    { field: "SysUserID", title: "SysUserID" },
-    { field: "TableName", title: "TableName" },
-    { field: "TimeStamp", title: "TimeStamp" },
-  ];
+  import BarChart from "../lib/BarChart.svelte";
 
-  onMount(() => {
+  let tablename = "CIFLookup";
+  let tablePK = "CIFLookupNID";
+
+  let filter = { CIFLookupString: "IT" };
+
+  onMount(() => { 
+    if(localStorage.getItem(`${tablename}_filter`)) {
+      filter = JSON.parse(localStorage.getItem(`${tablename}_filter`));
+    } else {
+      localStorage.setItem(`${tablename}_filter`, JSON.stringify(filter));
+    }
+   })
+
+  let result = {
+    result: false,
+    message: "",
+    data: [],
+    error: ""
+  };
+
+  async function fetchColumns() {
+    try {
+      const response = await fetch(`http://localhost:8000/v1/data/header?tablename=${tablename}`);
+      const data = await response.json();
+      result = data;
+    } catch (error) {
+      console.error("Error fetching columns:", error);
+    }
+  }
+
+  function initTable(columns) {
+    // Destroy table first if already exists
+    // @ts-ignore
+    globalThis.$("#myTable").bootstrapTable("destroy");
+
+    // Initialize new table
     // @ts-ignore
     globalThis.$("#myTable").bootstrapTable({
-      url: "http://localhost:8000/v1/data/get-table?tablename=CIFLookup&nidkey=CIFLookupNID",
+      url: `http://localhost:8000/v1/data/get-table?tablename=${tablename}&nidkey=${tablePK}&filter=${JSON.stringify(filter)}`,
       method: "GET",
       contentType: "application/json",
       dataType: "json",
@@ -36,21 +49,30 @@
       pagination: true,
       showRefresh: true,
       showColumns: true,
-      toolbar:".toolbar",
+      toolbar: ".toolbar",
       offset: 0,
       pageSize: 100,
       pageList: [100, 200, 500],
       height: 750,
-      columns: columns,
+      columns: columns
     });
+  }
+
+  onMount(async () => {
+    await fetchColumns();
+    if (result.result && result.data && Array.isArray(result.data)) {
+      initTable(result.data);
+    } else {
+      console.error("Data columns not valid", result);
+    }
   });
 </script>
 
 <section>
-  <!-- Tabs (di bawah) -->
+  <!-- Tabs -->
   <ul class="nav nav-tabs bottom-tab" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-tab-pane" type="button" role="tab" aria-controls="data-tab-pane" aria-selected="false">Data Table</button>
+      <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-tab-pane" type="button" role="tab" aria-controls="data-tab-pane" aria-selected="true">Data Table</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="bar-chart-tab" data-bs-toggle="tab" data-bs-target="#bar-chart-tab-pane" type="button" role="tab" aria-controls="bar-chart-tab-pane" aria-selected="false">Bar Chart</button>
@@ -69,34 +91,23 @@
     </li>
   </ul>
 
-  <!-- Tab Content (di atas) -->
+  <!-- Tab Content -->
   <div class="tab-content" id="myTabContent">
-    <div class="tab-pane fade show active" id="data-tab-pane" role="tabpanel" aria-labelledby="data-tab" tabindex="0" >
-      <!-- HTML Table -->
+    <div class="tab-pane fade show active" id="data-tab-pane" role="tabpanel" aria-labelledby="data-tab">
       <div class="toolbar">
-        <p>Filter</p>
+        <button aria-label="filter" class="btn btn-primary"><i class="bi bi-search"></i></button>
       </div>
       <table id="myTable" class="table table-striped" data-toggle="table"></table>
     </div>
-    <div class="tab-pane fade" id="bar-chart-tab-pane" role="tabpanel" aria-labelledby="bar-chart-tab" tabindex="0" >
-      <!-- HTML Chart -->
-      Bar Chart
+    <div class="tab-pane fade" id="bar-chart-tab-pane" role="tabpanel" aria-labelledby="bar-chart-tab">
+      <div class="d-flex py-2">
+        <button aria-label="filter" class="btn btn-primary"><i class="bi bi-search"></i></button>
+      </div>
+      <BarChart tablename={tablename} filter={filter}/>
     </div>
-    <div class="tab-pane fade" id="line-chart-tab-pane" role="tabpanel" aria-labelledby="line-chart-tab" tabindex="0" >
-      <!-- HTML Chart -->
-      Line Chart
-    </div>
-    <div class="tab-pane fade" id="pie-chart-tab-pane" role="tabpanel" aria-labelledby="pie-chart-tab" tabindex="0" >
-      <!-- HTML Chart -->
-      Pie Chart
-    </div>
-    <div class="tab-pane fade" id="scatter-chart-tab-pane" role="tabpanel" aria-labelledby="scatter-chart-tab" tabindex="0" >
-      <!-- HTML Chart -->
-      Scatter Chart
-    </div>
-    <div class="tab-pane fade" id="radar-chart-tab-pane" role="tabpanel" aria-labelledby="radar-chart-tab" tabindex="0" >
-      <!-- HTML Chart -->
-      Radar Chart
-    </div>
+    <div class="tab-pane fade" id="line-chart-tab-pane" role="tabpanel" aria-labelledby="line-chart-tab">Line Chart</div>
+    <div class="tab-pane fade" id="pie-chart-tab-pane" role="tabpanel" aria-labelledby="pie-chart-tab">Pie Chart</div>
+    <div class="tab-pane fade" id="scatter-chart-tab-pane" role="tabpanel" aria-labelledby="scatter-chart-tab">Scatter Chart</div>
+    <div class="tab-pane fade" id="radar-chart-tab-pane" role="tabpanel" aria-labelledby="radar-chart-tab">Radar Chart</div>
   </div>
 </section>
