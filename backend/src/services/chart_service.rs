@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use actix_web::web;
 use bb8::Pool;
 use bb8_tiberius::ConnectionManager;
-use crate::contexts::{connection::Transaction, model::{ActionResult, BarChartParams, BarChartRequest}};
+use crate::contexts::{connection::Transaction, model::{ActionResult, BarChartParams, BarChartRequest, DeleteBarChart}};
 use super::data_service::DataService;
 
 pub struct ChartService;
@@ -57,7 +57,7 @@ impl ChartService {
             
             Ok(mut conn) => {
                 if let Some(filter) = &params.filter {
-                    println!("Filter: {}", filter);
+                    // println!("Filter: {}", filter);
                     if filter != "{filter:undefined}" {
                         match serde_json::from_str::<HashMap<String, String>>(filter) {
                             Ok(filter_name) => {
@@ -81,7 +81,7 @@ impl ChartService {
                     &params.column, &params.tablename, &q_and_where, &params.column
                 );
                 
-                println!("Query: {}, filter: {}", query, params.filter.unwrap());
+                // println!("Query: {}, filter: {}", query, params.filter.unwrap());
     
                 match conn.query(query, &[]).await {
                     Ok(rows) => {      
@@ -114,19 +114,18 @@ impl ChartService {
     }
 
     pub async fn save_bar_chart(connection: web::Data<Pool<ConnectionManager>>, request: BarChartRequest) -> ActionResult<(), String> {
-        
         let mut result: ActionResult<(), String> = ActionResult::default();
-        
+            
         match Transaction::begin(&connection).await {
             Ok(trans) => {
-                // 🔴 Scope pertama: Insert ke BarChart
+
+                let joined_list_column = request.list_column;
+                let chart_id = request.chart_name.clone().unwrap_or_default().replace(" ", "-").to_lowercase();
+
                 match trans.conn.lock().await.as_mut() {
                     Some(conn) => {
-
-                        let joined_list_column = request.list_column;
-                        let chart_id = request.chart_name.replace(" ", "-").to_lowercase();
-
-                        match conn.query(
+                        
+                        match conn.execute(
                             r#"INSERT INTO [dbo].[BarChart] 
                             ([ChartID],[ChartName],[MenuID],[ListColumn])
                             VALUES
@@ -135,38 +134,147 @@ impl ChartService {
                                 &chart_id, &request.chart_name, &request.menu_id, &joined_list_column
                             ],
                         ).await {
-                            Ok(_) => {
-                                result.result = true;
-                                result.message = "BarChart saved successfully".to_string();
+                            Ok(query_result) => {
+                                let rows = query_result.rows_affected();
+                                if rows.iter().any(|row| row > &0) {
+                                    result.result = true;
+                                    result.message = format!("{} BarChart saved successfully", rows.iter().count());
+                                } else {
+                                    result.result = false;
+                                    result.message = "No BarChart found to save".to_string();
+                                }
+
                             }
                             Err(err) => {
                                 result.message = "Failed".to_string();
-                                result.error = Some(format!("Failed to insert BarChart: {}", err));
+                                result.error = Some(format!("Failed to delete BarChart: {}", err));
                                 return result;
                             }
-                        };
+                        }                        
                     }
                     None => {
                         result.error = Some("Failed to get connection from pool".into());
                         return result;
                     }
                 }
-                // 🔵 Commit transaksi
+    
                 if let Err(err) = trans.commit().await {
                     result.error = Some(format!("Failed to commit transaction: {:?}", err));
                     return result;
                 }
-
-                result.result = true;
-                result.message = "User registered successfully".to_string();
             }
             Err(err) => {
                 result.error = Some(format!("Failed to start transaction: {:?}", err));
             }
         }
-
-        return result;
+    
+        result
     }
+
+    pub async fn update_bar_chart(connection: web::Data<Pool<ConnectionManager>>, request: BarChartRequest) -> ActionResult<(), String> {
+        let mut result: ActionResult<(), String> = ActionResult::default();
+            
+        match Transaction::begin(&connection).await {
+            Ok(trans) => {
+
+                let joined_list_column = request.list_column;
+                let chart_id = request.chart_name.clone().unwrap_or_default().replace(" ", "-").to_lowercase();
+
+                match trans.conn.lock().await.as_mut() {
+                    Some(conn) => {
+                        
+                        match conn.execute(
+                            r#"UPDATE [dbo].[BarChart] SET 
+                            [ChartName] = @P2, [MenuID] = @P3, [ListColumn] = @P4 WHERE [ChartID] = @P1"#,
+                            &[
+                                &chart_id, &request.chart_name, &request.menu_id, &joined_list_column
+                            ],
+                        ).await {
+                            Ok(query_result) => {
+                                let rows = query_result.rows_affected();
+                                if rows.iter().any(|row| row > &0) {
+                                    result.result = true;
+                                    result.message = format!("{} BarChart updated successfully", rows.iter().count());
+                                } else {
+                                    result.result = false;
+                                    result.message = "No BarChart found to update".to_string();
+                                }
+
+                            }
+                            Err(err) => {
+                                result.message = "Failed".to_string();
+                                result.error = Some(format!("Failed to delete BarChart: {}", err));
+                                return result;
+                            }
+                        }                        
+                    }
+                    None => {
+                        result.error = Some("Failed to get connection from pool".into());
+                        return result;
+                    }
+                }
+    
+                if let Err(err) = trans.commit().await {
+                    result.error = Some(format!("Failed to commit transaction: {:?}", err));
+                    return result;
+                }
+            }
+            Err(err) => {
+                result.error = Some(format!("Failed to start transaction: {:?}", err));
+            }
+        }
+    
+        result
+    }
+
+    pub async fn delete_bar_chart(connection: web::Data<Pool<ConnectionManager>>, request: DeleteBarChart) -> ActionResult<(), String> {
+        let mut result: ActionResult<(), String> = ActionResult::default();
+            
+        match Transaction::begin(&connection).await {
+            Ok(trans) => {
+                match trans.conn.lock().await.as_mut() {
+                    Some(conn) => {
+                        match conn.execute(
+                            r#"DELETE FROM [dbo].[BarChart] WHERE ChartID = @P1 AND MenuID = @P2"#,
+                            &[&request.chart_id, &request.menu_id],
+                        ).await {
+                            Ok(query_result) => {
+                                let rows = query_result.rows_affected();
+                                if rows.iter().any(|row| row > &0) {
+                                    result.result = true;
+                                    result.message = format!("{} BarChart(s) deleted successfully", rows.iter().count());
+                                } else {
+                                    result.result = false;
+                                    result.message = "No BarChart found to delete".to_string();
+                                }
+
+                            }
+                            Err(err) => {
+                                result.message = "Failed".to_string();
+                                result.error = Some(format!("Failed to delete BarChart: {}", err));
+                                return result;
+                            }
+                        }                        
+                    }
+                    None => {
+                        result.error = Some("Failed to get connection from pool".into());
+                        return result;
+                    }
+                }
+    
+                if let Err(err) = trans.commit().await {
+                    result.error = Some(format!("Failed to commit transaction: {:?}", err));
+                    return result;
+                }
+            }
+            Err(err) => {
+                result.error = Some(format!("Failed to start transaction: {:?}", err));
+            }
+        }
+    
+        result
+    }
+    
     // #endregion
 
     // #region LINE CHART SERVICE

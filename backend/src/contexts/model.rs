@@ -1,5 +1,7 @@
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
+use validator::Validate;
+use crate::services::validation_service::validator::required;
 // pub struct DateTimeConverter;
 
 // impl DateTimeConverter {
@@ -100,11 +102,22 @@ pub struct ResultList {
     pub rows: Vec<serde_json::Value>, // Pastikan ini bisa dikonversi ke JSON
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct BarChartRequest {
-    pub chart_name: String,
-    pub menu_id: String,
-    pub list_column: String,
+    #[validate(custom(function = "required"))]
+    pub chart_name: Option<String>,
+    #[validate(custom(function = "required"))]
+    pub menu_id: Option<String>,
+    #[validate(custom(function = "required"))]
+    pub list_column: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct DeleteBarChart {
+    #[validate(custom(function = "required"))]
+    pub menu_id: Option<String>,
+    #[validate(custom(function = "required"))]
+    pub chart_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

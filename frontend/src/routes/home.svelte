@@ -1,11 +1,14 @@
 <script>
   import { onMount } from "svelte";
   import BarChart from "../lib/BarChart.svelte";
+  import { base_url, fetchColumns, openModal } from "../app";
+  import ModalContainer from "../lib/ModalContainer.svelte";
+  import ModalFilter from "../lib/ModalFilter.svelte";
 
   let tablename = "CIFLookup";
   let tablePK = "CIFLookupNID";
 
-  let filter = { CIFLookupString: "IT" };
+  let filter = $state({});
 
   onMount(() => { 
     if(localStorage.getItem(`${tablename}_filter`)) {
@@ -15,20 +18,30 @@
     }
    })
 
-  let result = {
+  let result = $state({
     result: false,
     message: "",
     data: [],
     error: ""
-  };
+  });
 
-  async function fetchColumns() {
-    try {
-      const response = await fetch(`http://localhost:8000/v1/data/header?tablename=${tablename}`);
-      const data = await response.json();
-      result = data;
-    } catch (error) {
-      console.error("Error fetching columns:", error);
+  function updateFilter(data) {
+    filter = data;
+    localStorage.setItem(`${tablename}_filter`, JSON.stringify(data));
+  }
+
+  function toolbarButton () {
+    return {
+      btnFilter: {
+        text: "Filter",
+        icon: "bi bi-search",
+        event: function () {
+          openModal("filter");
+        },
+        attributes: {
+          title: "Search all data",
+        }
+      }
     }
   }
 
@@ -40,15 +53,21 @@
     // Initialize new table
     // @ts-ignore
     globalThis.$("#myTable").bootstrapTable({
-      url: `http://localhost:8000/v1/data/get-table?tablename=${tablename}&nidkey=${tablePK}&filter=${JSON.stringify(filter)}`,
+      url: `${base_url}/data/get-table?tablename=${tablename}&nidkey=${tablePK}&filter=${JSON.stringify(filter)}`,
       method: "GET",
       contentType: "application/json",
+      buttons: toolbarButton(),
+      buttonsClass: "primary",
+      // buttonsAlign: "left",
+      // toolbarAlign: "right",
       dataType: "json",
       cache: true,
       sidePagination: "server",
+      showColumns: true,
       pagination: true,
       showRefresh: true,
-      showColumns: true,
+      autoRefresh: true,
+      autoRefreshInterval: 120,
       toolbar: ".toolbar",
       offset: 0,
       pageSize: 100,
@@ -59,13 +78,14 @@
   }
 
   onMount(async () => {
-    await fetchColumns();
+    result = await fetchColumns(tablename);
     if (result.result && result.data && Array.isArray(result.data)) {
       initTable(result.data);
     } else {
       console.error("Data columns not valid", result);
     }
   });
+
 </script>
 
 <section>
@@ -95,19 +115,36 @@
   <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="data-tab-pane" role="tabpanel" aria-labelledby="data-tab">
       <div class="toolbar">
-        <button aria-label="filter" class="btn btn-primary"><i class="bi bi-search"></i></button>
+        {#if Object.entries(filter).length > 0}
+          FIlter: 
+          <span class="text-muted">
+            {#each Object.entries(filter) as [key, value], index}
+              {#if key === 'IsRejected' || key === 'IsRevised' || key === 'IsFinished'}
+                {key}: {value === '0' ? 'No' : 'Yes'}
+              {:else}
+                {key}: {value}
+              {/if}
+              {#if index < Object.entries(filter).length - 1}
+                {' | '}
+              {/if}
+            {/each}
+          </span>
+        {:else}
+          <span class="text-muted fw-bold">No Filter</span>
+        {/if}
       </div>
       <table id="myTable" class="table table-striped" data-toggle="table"></table>
     </div>
     <div class="tab-pane fade" id="bar-chart-tab-pane" role="tabpanel" aria-labelledby="bar-chart-tab">
-      <div class="d-flex py-2">
-        <button aria-label="filter" class="btn btn-primary"><i class="bi bi-search"></i></button>
-      </div>
-      <BarChart tablename={tablename} filter={filter}/>
+      <button aria-label="filter" class="btn btn-primary my-3" type="button" onclick={() => openModal('filter')}><i class="bi bi-search"></i></button>
+      <BarChart tablename={tablename} filter={filter} column={result.data}/>
     </div>
     <div class="tab-pane fade" id="line-chart-tab-pane" role="tabpanel" aria-labelledby="line-chart-tab">Line Chart</div>
     <div class="tab-pane fade" id="pie-chart-tab-pane" role="tabpanel" aria-labelledby="pie-chart-tab">Pie Chart</div>
     <div class="tab-pane fade" id="scatter-chart-tab-pane" role="tabpanel" aria-labelledby="scatter-chart-tab">Scatter Chart</div>
     <div class="tab-pane fade" id="radar-chart-tab-pane" role="tabpanel" aria-labelledby="radar-chart-tab">Radar Chart</div>
   </div>
+  <ModalContainer id="filter" title="Filter Data Table" size="lg" >
+    <ModalFilter data={result.data} tablename={tablename} updateFilter={updateFilter} initTable={initTable} />
+  </ModalContainer>
 </section>

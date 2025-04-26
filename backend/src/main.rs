@@ -20,6 +20,7 @@ mod services {
     pub mod generic_service;
     pub mod data_service;
     pub mod chart_service;
+    pub mod validation_service;
 }
 
 #[get("/")]

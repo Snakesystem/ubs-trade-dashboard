@@ -12,14 +12,18 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@types/jquery": "^3.5.32",
     "bootstrap-icons": "^1.11.3",
-    "svelte": "^5.23.1",
+    "svelte": "^5.28.2",
     "vite": "^6.3.1"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
+    "@sveltestrap/sveltestrap": "^7.1.0",
     "bootstrap": "^5.3.5",
     "bootstrap-table": "^1.24.1",
+    "chart.js": "^4.4.9",
     "jquery": "^3.7.1",
-    "svelte-spa-router": "^4.0.1"
+    "sortablejs": "^1.15.6",
+    "svelte-spa-router": "^4.0.1",
+    "sweetalert2": "^11.19.1"
   }
 }
