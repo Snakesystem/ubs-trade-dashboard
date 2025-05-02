@@ -148,3 +148,11 @@
     <ModalFilter data={result.data} tablename={tablename} updateFilter={updateFilter} initTable={initTable} />
   </ModalContainer>
 </section>
+
+<style scoped>
+  section {
+      padding: 1rem 1rem 2rem 1rem;
+      max-height: 90vh;
+      overflow-y: auto;
+  }
+</style>

@@ -13,6 +13,14 @@
   import Setting from "./routes/setting.svelte";
   import Help from "./routes/help.svelte";
   import Header from './lib/Header.svelte';
+  import Login from './routes/login.svelte';
+
+  let session = $state({
+    result: false,
+    message: "",
+    data: [],
+    error: ""
+  });
 
   // Mapping string ke komponen
   const componentMap = {
@@ -20,7 +28,8 @@
     profile: Profile,
     dashboard: Dashboard,
     settings: Setting,
-    help: Help
+    help: Help,
+    login: Login
   };
 
   // Generate routes secara dinamis
@@ -35,26 +44,46 @@
     push('/' + path);
   }
 
+  async function checkSession() {
+    const response = await fetch(`https://snakesystem-web-api-tdam.shuttle.app/api/v1/auth/session`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      }
+    });
+    const result = await response.json();
+    if(result.result === false) {
+      navigateTo('login');
+    }
+    session.set(result);
+  }
+
   $effect(() => {
-    if ($location === '/') {
+
+    checkSession();
+
+    if ($location === '/' && session.result) {
       navigateTo('home');
     }
   })
 
 </script>
 <main>
-  <Header/>
-  <nav class="bottom-nav">
-    {#each menu as item}
-      <button class:active={$location === '/' + item.MenuID} onclick={() => navigateTo(item.MenuID)}>
-        <i class="bi bi-{item.MenuIcon} me-2"></i>{item.MenuName}
-      </button>
-    {/each}
-  </nav>
+  {#if $location !== '/login'}
+    <Header/>
+    <nav class="bottom-nav">
+      {#each menu as item}
+        {#if item.MenuID !== 'login'}
+          <button class:active={$location === '/' + item.MenuID} onclick={() => navigateTo(item.MenuID)}>
+            <i class="bi bi-{item.MenuIcon} me-2"></i>{item.MenuName}
+          </button>
+        {/if}
+      {/each}
+    </nav>
+  {/if}
 
-  <section>
-    <Router {routes} />
-  </section>
+  <Router {routes} />
 </main>
 
 <style>
@@ -90,11 +119,5 @@
     border-radius: 0 0 10px 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease-in-out;
-  }
-
-  section {
-    padding: 1rem 1rem 2rem 1rem;
-    max-height: 90vh;
-    overflow-y: auto;
   }
 </style>

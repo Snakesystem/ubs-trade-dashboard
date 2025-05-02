@@ -1,1 +1,11 @@
-<h1>Setting</h1>
+<section>
+    <h1>Setting</h1>
+</section>
+
+<style scoped>
+    section {
+        padding: 1rem 1rem 2rem 1rem;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
