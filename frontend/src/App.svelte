@@ -47,9 +47,9 @@
   async function checkSession() {
     const response = await fetch(`https://snakesystem-web-api-tdam.shuttle.app/api/v1/auth/session`, {
       method: "GET",
+      credentials: 'include',
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
       }
     });
     const result = await response.json();

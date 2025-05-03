@@ -14,9 +14,9 @@
     async function submit() {
         const response = await fetch(`https://snakesystem-web-api-tdam.shuttle.app/api/v1/auth/login`, {
             method: "POST",
+            credentials: 'include',
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
             },
             body: JSON.stringify(formData),
         });
