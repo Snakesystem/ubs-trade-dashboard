@@ -12,14 +12,15 @@
     });
 
     async function submit() {
-        const response = await fetch(`https://snakesystem-web-api-tdam.shuttle.app/api/v1/auth/login`, {
+        const response = await fetch(`/api/v1/auth/login`, {
             method: "POST",
-            credentials: 'include',
             headers: {
-                "Content-Type": "application/json",
+              "Content-Type": "application/json",
             },
+            credentials: 'include',
             body: JSON.stringify(formData),
         });
+        console.log(response)
         const result = await response.json();
         if (response.status == 200) {
             await Swal.fire({
