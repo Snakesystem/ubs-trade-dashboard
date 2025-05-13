@@ -20,7 +20,6 @@
             credentials: 'include',
             body: JSON.stringify(formData),
         });
-        console.log(response)
         const result = await response.json();
         if (response.status == 200) {
             await Swal.fire({
@@ -28,7 +27,7 @@
                 title: result.message,
                 text: "Login Success",
             })
-            await navigateTo("home");
+            navigateTo("home");
         } else {
             await Swal.fire({
                 icon: "error",
@@ -36,7 +35,6 @@
                 text: result.error,
             })
         }
-        console.log({result, response});
     }
 </script>
 
@@ -80,8 +78,8 @@
   
             <div class="text-center text-lg-start mt-4 pt-2">
               <button  type="submit" class="btn btn-primary w-100">Login</button>
-              <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account? <a href="#!"
-                  class="link-danger">Register</a></p>
+              <!-- <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account? <a href="#!"
+                  class="link-danger">Register</a></p> -->
             </div>
   
           </form>
@@ -91,9 +89,11 @@
     <div
       class="d-flex flex-column flex-md-row text-center text-md-start justify-content-between py-4 px-4 px-xl-5 bg-primary copyright">
       <!-- Copyright -->
-      <div class="text-white mb-3 mb-md-0">
-        Copyright © 2020. All rights reserved.
-      </div>
+      <a target="_blank" href="https://github.com/snakesystem" class="text-decoration-none">
+        <div class="text-white mb-3 mb-md-0">
+          © 2025. Snakesystem.
+        </div>
+      </a>
       <!-- Copyright -->
     </div>
 </section>

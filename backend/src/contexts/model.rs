@@ -1,7 +1,8 @@
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
+use utoipa::{IntoParams, ToSchema};
 use validator::Validate;
-use crate::services::validation_service::validator::required;
+use crate::services::validation_service::validator::{required, valid_password};
 // pub struct DateTimeConverter;
 
 // impl DateTimeConverter {
@@ -11,7 +12,7 @@ use crate::services::validation_service::validator::required;
 //     }
 // }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ActionResult<T, E> {
     pub result: bool,
     pub message: String,
@@ -31,6 +32,32 @@ impl<T, E> Default for ActionResult<T, E> {
             error: None,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
+pub struct Claims {
+    pub result: bool,
+    pub auth_usernid: i32,
+    pub email: String,
+    pub mobile_phone: String,
+    pub disabled_login: bool,
+    pub expired_token: i64,
+    pub expired_date: String,
+    pub register_date: DateTime<Utc>,
+    pub exp: usize,
+    pub picture: Option<String>,
+    pub comp_name: Option<String>,
+    pub ip_address: Option<String>,
+    pub app_name: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct LoginRequest {
+    #[validate(required, email(message = "Invalid email format"))]
+    pub email: Option<String>,
+
+    #[validate(custom(function = "required"), custom(function = "valid_password"))]
+    pub password: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -76,11 +103,12 @@ pub struct Order {
     pub created_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, IntoParams)]
 pub struct TableDataParams {
     pub tablename: String,
     pub limit: i32,
     pub offset: i32,
+    #[param(required = false)]
     pub filter: Option<String>,
     pub sort: Option<String>,
     pub order: Option<String>,
@@ -95,7 +123,7 @@ pub struct QueryClass {
     pub query_total_with_filter: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ResultList {
     pub totalNotFiltered: i32,
     pub total: i32,
@@ -120,14 +148,14 @@ pub struct DeleteBarChart {
     pub chart_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, IntoParams)]
 pub struct BarChartParams {
     pub tablename: String,
     pub column: String,
     pub filter: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, IntoParams)]
 pub struct HeaderParams {
     pub tablename: String,
 }

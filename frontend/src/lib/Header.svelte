@@ -1,5 +1,5 @@
-<button class="btn d-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
-  <span class="navbar-toggler-icon"></span>
+<button class="btn d-flex align-items-center gap-2 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+  <span class="navbar-toggler-icon fs-4"></span>
   <h4>UBS Trade Dashboard</h4>
 </button>
 
@@ -15,3 +15,7 @@
     </div>
   </div>
 </div>
+
+<style scoped>
+  
+</style>

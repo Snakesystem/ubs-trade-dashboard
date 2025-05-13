@@ -1,6 +1,6 @@
 // modalStore.ts
 import { writable } from "svelte/store";
-export const base_url = "http://localhost:8000/v1";
+export const base_url = "http://localhost:8001/v1";
 
 export const modals = writable({});
 
